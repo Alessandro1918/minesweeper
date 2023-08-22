@@ -1,6 +1,7 @@
 # minesweeper
 
- 🚀 Projeto
+## 🚀 Projeto
+
 🚧 Em construção 🚧
 
 ## 🗂️ Utilização

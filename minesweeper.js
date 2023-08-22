@@ -19,7 +19,7 @@ var selectedCell = [0, 0]   //[row, column] index of the user input
 
 //https://i.stack.imgur.com/KTSQa.png
 //1=bold, 38=front, 5=next argument is a color code (not RGB), 4=blue, 48=background
-const EMPTY = "\033[48;5;250m"                //background dark gray
+const EMPTY = "\033[48;5;248m"                //background dark gray
 const BLUE = "\033[1;38;5;4;48;5;248m"        //bold blue on dark gray
 const GREEN = "\033[1;38;5;46;48;5;248m"      //bold green on dark gray
 const RED = "\033[1;38;5;9;48;5;248m"         //bold red on dark gray
@@ -28,9 +28,9 @@ const PURPLE = "\033[1;38;5;127;48;5;248m"    //bold purple on dark gray
 const CYAN = "\033[1;38;5;14;48;5;248m"       //bold cyan on dark gray
 const BLACK = "\033[1;38;5;0;48;5;248m"       //bold black on dark gray
 const ORANGE = "\033[1;38;5;214;48;5;248m"    //bold orange on dark gray
-const RED_FLAG = "\033[1;38;5;9;48;5;252m"    //red on bright gray
-const INVERT_COLOR = "\x1b[7m"                //change foregroud/background colors
-const RESET_COLOR = "\x1b[0m"                 //change terminal color back to white on black
+const SELECTED = "\033[38;5;214m"             //orange
+const RED_FLAG = "\033[1;38;5;9;48;5;252m"    //red on white
+const RESET_COLOR = "\x1b[0m"                 //reset terminal color back to white on black
 
 const CLOSED_CELL = "▇▇▊"
 const NUMBER_CELL = [
@@ -97,23 +97,29 @@ function printGrid() {
   console.clear()
   for (i = 0; i < GRID_ROWS; i++) {
     for (j = 0; j < GRID_COLUMNS; j++) {
+      let isSelected = false
       if (selectedCell[0] == i && selectedCell[1] == j) {
-        process.stdout.write(INVERT_COLOR)
+        isSelected = true
       }
+      let cellSymbol = ''
       if (grid[i][j].isOpen) {
         if (grid[i][j].value == -1) {
-            process.stdout.write(BOMB)
+            cellSymbol = BOMB
+            if (isSelected) cellSymbol = cellSymbol.replace("48;5;248", "48;5;9")   //back: gray -> red
         } else {
-          process.stdout.write(NUMBER_CELL[grid[i][j].value])
+          cellSymbol = NUMBER_CELL[grid[i][j].value]
+          if (isSelected) cellSymbol = cellSymbol.replace("48;5;248", "48;5;0")     //back: gray -> black
         }
       } else {
         if (grid[i][j].isFlag) {
-          process.stdout.write(FLAG)
+          cellSymbol = FLAG
+          if (isSelected) cellSymbol = cellSymbol.replace("48;5;252", "48;5;0")     //back: white -> black
         } else {
-          process.stdout.write(CLOSED_CELL)
+          cellSymbol = CLOSED_CELL
+          if (isSelected) cellSymbol = SELECTED + cellSymbol                            //front: white -> gray
         }
       }
-      process.stdout.write(RESET_COLOR)
+      process.stdout.write(cellSymbol + RESET_COLOR)
     }
     process.stdout.write("\n")
   }
