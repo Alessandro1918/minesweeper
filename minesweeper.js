@@ -8,12 +8,13 @@ process.stdin.setRawMode(true)                          //emit event on a per ch
 //Read user input to update this vars:
 var GRID_ROWS = 0
 var GRID_COLUMNS = 0
-var BOMB_COUNT = 0          //how many cells are actually bombs
+var BOMB_COUNT = 0          //how many cells are bombs
 
 var selectedCell = [0, 0]   //[row, column] index of the user input
 
 var totalTime = 0           //seconds
-var flagCount = 0           //how many cells are marked as "bomb"
+var bombs = []              //array of bomb" cells
+var flags = []              //arry of cells marked as "bomb"
 
 //V1    V2      V3
 // 5 ██▊, ▟█▊▟█▊, ▇█▊▇█▊
@@ -78,6 +79,12 @@ function getNeighborhoodBombCount(i, j) {
   )
 }
 
+//Check if the "flags" array matches the "bombs" array
+//https://quickref.me/compare-two-arrays-regardless-of-order.html
+function isEqual (a, b) {
+  return JSON.stringify(a.sort()) === JSON.stringify(b.sort())
+}
+
 function initGrid() {
 
   console.clear()
@@ -102,6 +109,7 @@ function initGrid() {
     const rj = Math.floor(Math.random() * GRID_COLUMNS)
     if (grid[ri][rj].value != -1) {
       grid[ri][rj] = {...grid[ri][rj], value: -1}
+      bombs.push([ri, rj])
       plantedBombs += 1
     }
   }
@@ -121,22 +129,39 @@ function initGrid() {
 //Open a cell (can't open a flag cell, you need to remove flag first)
 function openCell(i, j) {
   if (!grid[i][j].isFlag) {
-    grid[i][j] = {...grid[i][j], isOpen: true}
+    grid[i][j] = {...grid[i][j], isOpen: true
+  }
     printGrid()
+  }
+  //BOMB! Game over
+  if (grid[i][j].value == -1) {
+    console.log("GAME OVER!")
+    clearInterval(timer)
+    process.exit()
   }
 }
 
-//Mark the cell with a flag (or remove it)
+//Mark the cell with a flag (or remove it).
+//User can't flag more cells than the total number of bombs in the game.
 function flagCell(i, j) {
-  if (!grid[i][j].isOpen) {
+  if (
+    !grid[i][j].isOpen && 
+    flags.length < BOMB_COUNT
+  ) {
     if (grid[i][j].isFlag) {
       grid[i][j] = {...grid[i][j], isFlag: false}
-      flagCount -= 1
+      flags = [...flags.filter(e => e[0] != i && e[1] != j)]
     } else {
       grid[i][j] = {...grid[i][j], isFlag: true}
-      flagCount += 1
+      flags.push([i, j])
     }
     printGrid()
+  }
+  //Flagged last bomb:
+  if (isEqual(flags, bombs)) {
+    console.log("YOU WON!")
+    clearInterval(timer)
+    process.exit()
   }
 }
 
@@ -182,7 +207,7 @@ function printGrid() {
     String(Math.floor(totalTime % 60)).padStart(2, "0")
   )
 
-  console.log(`Bombs: ${flagCount}/${BOMB_COUNT}`)
+  console.log(`Bombs: ${flags.length}/${BOMB_COUNT}`)
 }
 
 //Move the userInput 1 unit at given direction
@@ -248,7 +273,7 @@ switch (level) {
 
 initGrid()
 
-setInterval(() => {
+let timer = setInterval(() => {
   totalTime += 1
   printGrid()
 }, 1000)  //ms
