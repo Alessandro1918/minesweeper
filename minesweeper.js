@@ -1,6 +1,10 @@
+require("readline").emitKeypressEvents(process.stdin)   //makes process.stdin emit keypress events
+process.stdin.setRawMode(true)                          //emit event on a per char base, instead of per enter key press
 
 const GRID_ROWS = 9
 const GRID_COLUMNS = 9
+
+var selectedCell = [0, 0]   //[row, column] index of the user input
 
 //V1    V2      V3
 // 5 ██▊, ▟█▊▟█▊, ▇█▊▇█▊
@@ -24,6 +28,7 @@ const PURPLE = "\033[1;38;5;127;48;5;248m"    //bold purple on dark gray
 const CYAN = "\033[1;38;5;14;48;5;248m"       //bold cyan on dark gray
 const BLACK = "\033[1;38;5;0;48;5;248m"       //bold black on dark gray
 const ORANGE = "\033[1;38;5;214;48;5;248m"    //bold orange on dark gray
+const RED_FLAG = "\033[1;38;5;9;48;5;252m"    //red on bright gray
 const INVERT_COLOR = "\x1b[7m"                //change foregroud/background colors
 const RESET_COLOR = "\x1b[0m"                 //change terminal color back to white on black
 
@@ -33,10 +38,8 @@ const NUMBER_CELL = [
   BLUE + " 1 ", GREEN + " 2 ", RED + " 3 ", MAGENTA + " 4 ", 
   PURPLE + " 5 ", CYAN + " 6 ", BLACK + " 7 ", ORANGE + " 8 "
 ]
-const FLAG = "\033[1;38;5;9;48;5;252m" + " ⚑ "   //red on bright gray
-const BOMB = "\033[1;38;5;0;48;5;248m"  + " ✻ "  //black on dark gray
-
-var selectedCell = [0, 1]   //[row, column] index of the user input
+const FLAG = RED_FLAG + " ⚑ "   
+const BOMB = BLACK + " ✻ "
 
 //Init grid "x" by "y" of cells (2D array of objects)
 const grid = []
@@ -58,7 +61,7 @@ function getNeighborhoodBombCount(i, j) {
 
 function initGrid(level) {
 
-  //Plant bombs (set value as -1)
+  //Plant bombs (set cell value as -1)
   var i = 0, j = 0
   grid[i][j] = {...grid[i][j], value: -1}
   i = 0; j = 1
@@ -74,12 +77,20 @@ function initGrid(level) {
   }
 }
 
+//Open a cell (can't open a flag cell, you need to remove flag first)
 function openCell(i, j) {
-  grid[i][j] = {...grid[i][j], isOpen: true}
+  if (!grid[i][j].isFlag) {
+    grid[i][j] = {...grid[i][j], isOpen: true}
+    printGrid()
+  }
 }
 
+//Mark the cell with a flag (or remove it)
 function flagCell(i, j) {
-  grid[i][j] = {...grid[i][j], isFlag: true}
+  if (!grid[i][j].isOpen) {
+    grid[i][j] = {...grid[i][j], isFlag: !grid[i][j].isFlag}
+    printGrid()
+  }
 }
 
 function printGrid() {
@@ -107,6 +118,51 @@ function printGrid() {
     process.stdout.write("\n")
   }
 }
+
+//Move the userInput 1 unit at given direction
+function move(direction) {
+  switch (direction) {
+    case "up":
+      if (selectedCell[0] > 0) {
+        selectedCell[0] -= 1
+      }
+      break
+
+    case "down":
+      if (selectedCell[0] < GRID_ROWS - 1) {
+        selectedCell[0] += 1
+      }
+      break
+
+    case "left":
+        if (selectedCell[1] > 0) {
+          selectedCell[1] -= 1
+        }
+        break
+  
+    case "right":
+        if (selectedCell[1] < GRID_COLUMNS - 1) {
+          selectedCell[1] += 1
+        }
+        break
+  }
+
+  printGrid()
+}
+
+
+//Read key press
+process.stdin.on("keypress", (char, key) => {
+  switch (key.name) {
+    case "up":    move("up");     break;
+    case "left":  move("left");   break;
+    case "right": move("right");  break;
+    case "down":  move("down");   break;
+    case "space":  openCell(selectedCell[0], selectedCell[1]);   break;
+    case "return": flagCell(selectedCell[0], selectedCell[1]);   break;
+    case "c":     if (key.ctrl)   process.exit();   break;  //CTRL + C: stop script
+  }
+})
 
 initGrid()
 
