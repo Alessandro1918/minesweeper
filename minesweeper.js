@@ -5,15 +5,15 @@ process.stdin.setRawMode(true)                          //emit event on a per ch
 // ***** Constanst *****
 // *********************
 
-const GRID_ROWS = 9
-const GRID_COLUMNS = 9
+//Read user input to update this vars:
+var GRID_ROWS = 0
+var GRID_COLUMNS = 0
+var BOMB_COUNT = 0          //how many cells are actually bombs
 
 var selectedCell = [0, 0]   //[row, column] index of the user input
 
 var totalTime = 0           //seconds
-var flagCount = 0           //cells marked as "bomb"
-
-var bombCount = 10          //how many cells are actually bombs
+var flagCount = 0           //how many cells are marked as "bomb"
 
 //V1    V2      V3
 // 5 ██▊, ▟█▊▟█▊, ▇█▊▇█▊
@@ -97,7 +97,7 @@ function initGrid() {
 
   //Plant bombs (set cell value as -1)
   var plantedBombs = 0
-  while (plantedBombs < bombCount) {
+  while (plantedBombs < BOMB_COUNT) {
     const ri = Math.floor(Math.random() * GRID_ROWS)
     const rj = Math.floor(Math.random() * GRID_COLUMNS)
     if (grid[ri][rj].value != -1) {
@@ -182,7 +182,7 @@ function printGrid() {
     String(Math.floor(totalTime % 60)).padStart(2, "0")
   )
 
-  console.log(`Bombs: ${flagCount}/${bombCount}`)
+  console.log(`Bombs: ${flagCount}/${BOMB_COUNT}`)
 }
 
 //Move the userInput 1 unit at given direction
@@ -230,6 +230,21 @@ process.stdin.on("keypress", (char, key) => {
 })
 
 // ***** Start! *****
+
+var level
+if (process.argv.length == 2) {
+  level = "easy"            //no arg provided, use default
+} else {
+  level = process.argv[2]   //use param provided by CLI
+}
+switch (level) {
+  case "easy": 
+    GRID_ROWS = 9; GRID_COLUMNS = 9; BOMB_COUNT = 10; break;
+  case "medium": 
+    GRID_ROWS = 16; GRID_COLUMNS = 16; BOMB_COUNT = 40; break;
+    case "hard": 
+    GRID_ROWS = 16; GRID_COLUMNS = 30; BOMB_COUNT = 99; break;
+}
 
 initGrid()
 
