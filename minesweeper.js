@@ -10,6 +10,11 @@ const GRID_COLUMNS = 9
 
 var selectedCell = [0, 0]   //[row, column] index of the user input
 
+var totalTime = 0           //seconds
+var flagCount = 0           //cells marked as "bomb"
+
+var bombCount = 10          //how many cells are actually bombs
+
 //V1    V2      V3
 // 5 ██▊, ▟█▊▟█▊, ▇█▊▇█▊
 // ⚑  ✻ , ▟█▊▟█▊, ▇▇▊▇▇▊
@@ -20,6 +25,7 @@ var selectedCell = [0, 0]   //[row, column] index of the user input
 //⚑ = "\u2691" (Flag)
 //* = "\u002A" (Asterisk)
 //✻ = "\u273B" (Teardrop spoked asterisk)
+const CLOSED_CELL = "▇▇▊"
 
 //https://i.stack.imgur.com/KTSQa.png
 //1=bold, 38=front, 5=next argument is a color code (not RGB), 4=blue, 48=background
@@ -36,7 +42,6 @@ const SELECTED = "\033[38;5;214m"             //orange
 const RED_FLAG = "\033[1;38;5;9;48;5;252m"    //red on white
 const RESET_COLOR = "\x1b[0m"                 //reset terminal color back to white on black
 
-const CLOSED_CELL = "▇▇▊"
 const NUMBER_CELL = [
   EMPTY + "   ", 
   BLUE + " 1 ", GREEN + " 2 ", RED + " 3 ", MAGENTA + " 4 ", 
@@ -75,6 +80,8 @@ function getNeighborhoodBombCount(i, j) {
 
 function initGrid() {
 
+  console.clear()
+
   //Init 2D array of objects
   for (var i = 0; i < GRID_ROWS; i++) {
     const row = []
@@ -89,13 +96,13 @@ function initGrid() {
   }
 
   //Plant bombs (set cell value as -1)
-  var bombCount = 0
-  while (bombCount < 10) {
+  var plantedBombs = 0
+  while (plantedBombs < bombCount) {
     const ri = Math.floor(Math.random() * GRID_ROWS)
     const rj = Math.floor(Math.random() * GRID_COLUMNS)
     if (grid[ri][rj].value != -1) {
       grid[ri][rj] = {...grid[ri][rj], value: -1}
-      bombCount += 1
+      plantedBombs += 1
     }
   }
 
@@ -122,13 +129,22 @@ function openCell(i, j) {
 //Mark the cell with a flag (or remove it)
 function flagCell(i, j) {
   if (!grid[i][j].isOpen) {
-    grid[i][j] = {...grid[i][j], isFlag: !grid[i][j].isFlag}
+    if (grid[i][j].isFlag) {
+      grid[i][j] = {...grid[i][j], isFlag: false}
+      flagCount -= 1
+    } else {
+      grid[i][j] = {...grid[i][j], isFlag: true}
+      flagCount += 1
+    }
     printGrid()
   }
 }
 
 function printGrid() {
-  console.clear()
+  // console.clear()                                //V1; clear entire console makes the screen flicker
+  process.stdout.moveCursor(0, -(GRID_ROWS + 2))    //moves cursor up "n" lines (+1 from the "Time" line, +1 from the "Bombs" line)
+  process.stdout.clearLine(1)                       //clear from cursor to end
+
   for (i = 0; i < GRID_ROWS; i++) {
     for (j = 0; j < GRID_COLUMNS; j++) {
       let isSelected = false
@@ -159,6 +175,14 @@ function printGrid() {
     }
     process.stdout.write("\n")
   }
+
+  console.log(
+    "Time:", 
+    String(Math.floor(totalTime / 60)).padStart(2, "0") + ":" + 
+    String(Math.floor(totalTime % 60)).padStart(2, "0")
+  )
+
+  console.log(`Bombs: ${flagCount}/${bombCount}`)
 }
 
 //Move the userInput 1 unit at given direction
@@ -192,7 +216,6 @@ function move(direction) {
   printGrid()
 }
 
-
 //Read key press
 process.stdin.on("keypress", (char, key) => {
   switch (key.name) {
@@ -209,3 +232,8 @@ process.stdin.on("keypress", (char, key) => {
 // ***** Start! *****
 
 initGrid()
+
+setInterval(() => {
+  totalTime += 1
+  printGrid()
+}, 1000)  //ms
