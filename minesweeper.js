@@ -1,6 +1,10 @@
 require("readline").emitKeypressEvents(process.stdin)   //makes process.stdin emit keypress events
 process.stdin.setRawMode(true)                          //emit event on a per char base, instead of per enter key press
 
+// *********************
+// ***** Constanst *****
+// *********************
+
 const GRID_ROWS = 9
 const GRID_COLUMNS = 9
 
@@ -41,31 +45,59 @@ const NUMBER_CELL = [
 const FLAG = RED_FLAG + " ⚑ "   
 const BOMB = BLACK + " ✻ "
 
-//Init grid "x" by "y" of cells (2D array of objects)
-const grid = []
-for (var i = 0; i < GRID_ROWS; i++) {
-  const row = []
-  for (var j = 0; j < GRID_COLUMNS; j++) {
-    row.push({
-      value: 0,
-      isOpen: false,
-      isFlag: false
-    })
-  }
-  grid.push(row)
-}
+const grid = []     //grid "x" by "y" of cells (2D array of objects)
 
-function getNeighborhoodBombCount(i, j) {
+// ******************************
+// ********** Functions *********
+// ******************************
+
+//Check if a cell has a bomb. Count "out of grid" as "not bomb".
+//Return 1 if bomb, else 0.
+function isBomb(i, j) {
+  if (
+    i < 0 || i ==  GRID_ROWS ||
+    j < 0 || j == GRID_COLUMNS ||
+    grid[i][j].value != -1
+  ) {
+    return 0
+  }
   return 1
 }
 
-function initGrid(level) {
+//Get how many of the 8 adjacent cell neighbors is a bomb
+function getNeighborhoodBombCount(i, j) {
+  return (
+    isBomb(i-1, j-1) + isBomb(i-1, j) + isBomb(i-1, j+1) + 
+    isBomb(i, j-1)             +        isBomb(i, j+1) + 
+    isBomb(i+1, j-1) + isBomb(i+1, j) + isBomb(i+1, j+1)
+  )
+}
+
+function initGrid() {
+
+  //Init 2D array of objects
+  for (var i = 0; i < GRID_ROWS; i++) {
+    const row = []
+    for (var j = 0; j < GRID_COLUMNS; j++) {
+      row.push({
+        value: 0,
+        isOpen: false,
+        isFlag: false
+      })
+    }
+    grid.push(row)
+  }
 
   //Plant bombs (set cell value as -1)
-  var i = 0, j = 0
-  grid[i][j] = {...grid[i][j], value: -1}
-  i = 0; j = 1
-  grid[i][j] = {...grid[i][j], value: -1}
+  var bombCount = 0
+  while (bombCount < 10) {
+    const ri = Math.floor(Math.random() * GRID_ROWS)
+    const rj = Math.floor(Math.random() * GRID_COLUMNS)
+    if (grid[ri][rj].value != -1) {
+      grid[ri][rj] = {...grid[ri][rj], value: -1}
+      bombCount += 1
+    }
+  }
 
   //Numerate cells (get how many bombs this cell has around it)
   for (var i = 0; i < GRID_ROWS; i++) {
@@ -75,6 +107,8 @@ function initGrid(level) {
       }
     }
   }
+
+  printGrid()
 }
 
 //Open a cell (can't open a flag cell, you need to remove flag first)
@@ -101,6 +135,7 @@ function printGrid() {
       if (selectedCell[0] == i && selectedCell[1] == j) {
         isSelected = true
       }
+
       let cellSymbol = ''
       if (grid[i][j].isOpen) {
         if (grid[i][j].value == -1) {
@@ -119,6 +154,7 @@ function printGrid() {
           if (isSelected) cellSymbol = SELECTED + cellSymbol                            //front: white -> gray
         }
       }
+      
       process.stdout.write(cellSymbol + RESET_COLOR)
     }
     process.stdout.write("\n")
@@ -141,16 +177,16 @@ function move(direction) {
       break
 
     case "left":
-        if (selectedCell[1] > 0) {
-          selectedCell[1] -= 1
-        }
-        break
+      if (selectedCell[1] > 0) {
+        selectedCell[1] -= 1
+      }
+      break
   
     case "right":
-        if (selectedCell[1] < GRID_COLUMNS - 1) {
-          selectedCell[1] += 1
-        }
-        break
+      if (selectedCell[1] < GRID_COLUMNS - 1) {
+        selectedCell[1] += 1
+      }
+      break
   }
 
   printGrid()
@@ -170,11 +206,6 @@ process.stdin.on("keypress", (char, key) => {
   }
 })
 
+// ***** Start! *****
+
 initGrid()
-
-openCell(0, 0)
-openCell(0, 1)
-openCell(1, 0)
-flagCell(1, 1)
-
-printGrid()
