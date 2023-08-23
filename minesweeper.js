@@ -57,12 +57,21 @@ const grid = []     //grid "x" by "y" of cells (2D array of objects)
 // ********** Functions *********
 // ******************************
 
-//Check if a cell has a bomb. Count "out of grid" as "not bomb".
-//Return 1 if bomb, else 0.
+//Check if [i, j] indexes are from a cell inside the grid.
+function isInsideGrid(i, j) {
+  if (
+    i < 0 || i == GRID_ROWS ||
+    j < 0 || j == GRID_COLUMNS
+  ) {
+    return false
+  }
+  return true
+}
+
+//Check if a cell has a bomb, returning 1. Count number or "out of grid" as "not bomb", returning 0.
 function isBomb(i, j) {
   if (
-    i < 0 || i ==  GRID_ROWS ||
-    j < 0 || j == GRID_COLUMNS ||
+    !isInsideGrid(i, j) ||
     grid[i][j].value != -1
   ) {
     return 0
@@ -128,10 +137,25 @@ function initGrid() {
 
 //Open a cell (can't open a flag cell, you need to remove flag first)
 function openCell(i, j) {
+  //If not a flag, open
   if (!grid[i][j].isFlag) {
-    grid[i][j] = {...grid[i][j], isOpen: true
-  }
+    grid[i][j] = {...grid[i][j], isOpen: true}
     printGrid()
+  }
+
+  //If cell is empty, recursively open every closed not-bomb not-flag neighbor
+  if (
+    grid[i][j].value == 0
+  ) {
+    //Ident second "if" inside first "if" so I don't try to check "out of grid" cells
+    if (isInsideGrid(i-1, j-1)) if (grid[i-1][j-1].value > -1 && !grid[i-1][j-1].isOpen && !grid[i-1][j-1].isFlag)  openCell(i-1, j-1)
+    if (isInsideGrid(i-1, j))   if (grid[i-1][j].value > -1   && !grid[i-1][j].isOpen   && !grid[i-1][j].isFlag)    openCell(i-1, j)
+    if (isInsideGrid(i-1, j+1)) if (grid[i-1][j+1].value > -1 && !grid[i-1][j+1].isOpen && !grid[i-1][j+1].isFlag)  openCell(i-1, j+1)
+    if (isInsideGrid(i, j-1))   if (grid[i][j-1].value > -1   && !grid[i][j-1].isOpen   && !grid[i][j-1].isFlag)    openCell(i, j-1)
+    if (isInsideGrid(i, j+1))   if (grid[i][j+1].value > -1   && !grid[i][j+1].isOpen   && !grid[i][j+1].isFlag)    openCell(i, j+1)
+    if (isInsideGrid(i+1, j-1)) if (grid[i+1][j-1].value > -1 && !grid[i+1][j-1].isOpen && !grid[i+1][j-1].isFlag)  openCell(i+1, j-1)
+    if (isInsideGrid(i+1, j))   if (grid[i+1][j].value > -1   && !grid[i+1][j].isOpen   && !grid[i+1][j].isFlag)    openCell(i+1, j)
+    if (isInsideGrid(i+1, j+1)) if (grid[i+1][j+1].value > -1 && !grid[i+1][j+1].isOpen && !grid[i+1][j+1].isFlag)  openCell(i+1, j+1)
   }
   //BOMB! Game over
   if (grid[i][j].value == -1) {
@@ -172,12 +196,13 @@ function printGrid() {
 
   for (i = 0; i < GRID_ROWS; i++) {
     for (j = 0; j < GRID_COLUMNS; j++) {
+      
       let isSelected = false
       if (selectedCell[0] == i && selectedCell[1] == j) {
         isSelected = true
       }
 
-      let cellSymbol = ''
+      let cellSymbol
       if (grid[i][j].isOpen) {
         if (grid[i][j].value == -1) {
             cellSymbol = BOMB
@@ -192,7 +217,7 @@ function printGrid() {
           if (isSelected) cellSymbol = cellSymbol.replace("48;5;252", "48;5;0")     //back: white -> black
         } else {
           cellSymbol = CLOSED_CELL
-          if (isSelected) cellSymbol = SELECTED + cellSymbol                            //front: white -> gray
+          if (isSelected) cellSymbol = SELECTED + cellSymbol                        //front: white -> gray
         }
       }
       
@@ -267,7 +292,7 @@ switch (level) {
     GRID_ROWS = 9; GRID_COLUMNS = 9; BOMB_COUNT = 10; break;
   case "medium": 
     GRID_ROWS = 16; GRID_COLUMNS = 16; BOMB_COUNT = 40; break;
-    case "hard": 
+  case "hard": 
     GRID_ROWS = 16; GRID_COLUMNS = 30; BOMB_COUNT = 99; break;
 }
 
